@@ -10,7 +10,7 @@ using std::placeholders::_1;
 class ImuOdomHandler : public rclcpp::Node
 {
   public:
-    ImuOdomHandler(): Node("ImuOdomHandler")
+    ImuOdomHandler(): Node("ImuOdomHandler"), previous_yaw_(0.0), previous_velo_(0.0)
     {
         set_initial_values();
         imu_subscription_ = this->create_subscription<sensor_msgs::msg::Imu>("demo/imu", 10, std::bind(&ImuOdomHandler::imu_callback, this, _1));
@@ -19,7 +19,7 @@ class ImuOdomHandler : public rclcpp::Node
 
 
   private:
-    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) const
+    void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg)
     {
         if(output_)
         {
@@ -69,7 +69,7 @@ class ImuOdomHandler : public rclcpp::Node
         
     }
 
-    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg) const
+    void odom_callback(const nav_msgs::msg::Odometry::SharedPtr msg)
     {
         if(output_)
         {
@@ -113,7 +113,7 @@ class ImuOdomHandler : public rclcpp::Node
         return std::sqrt(x*x + y*y);
     }
 
-    const void process_model(double acc, double yaw_rate, double velo, double yaw_angle) const
+    const void process_model(double acc, double yaw_rate, double velo, double yaw_angle)
     {
         control_input_ << acc, yaw_rate, velo*std::cos(yaw_angle), velo*std::sin(yaw_angle);   
         state_.transpose() += delta_t_ *  control_input_.transpose();
