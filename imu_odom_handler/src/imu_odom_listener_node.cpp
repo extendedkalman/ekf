@@ -4,6 +4,9 @@
 #include "sensor_msgs/msg/imu.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "Eigen/Dense"
+#include "tf2/LinearMath/Quaternion.h"
+#include <tf2/LinearMath/Matrix3x3.h>
+
 
 using std::placeholders::_1;
 
@@ -106,6 +109,11 @@ class ImuOdomHandler : public rclcpp::Node
             }
         }
         
+        tf2:: Quaternion q(msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w);
+        tf2::Matrix3x3 m(q);
+        double roll, pitch, yaw;
+        m.getRPY(roll, pitch, yaw);
+        lidar_measurement_model(msg->pose.pose.position.x, msg->pose.pose.position.y, yaw);
     }
 
     double get_2d_value(double x, double y) const
@@ -125,7 +133,29 @@ class ImuOdomHandler : public rclcpp::Node
         
         //TODO: investigate the process model noise Q matrix
         covariance_ = jacobian_fx_ * covariance_ * jacobian_fx_.transpose() + 
-                      jacobian_fw_ * 0 * jacobian_fw_.transpose();
+                      jacobian_fw_ * Q_ * jacobian_fw_.transpose();
+
+    }
+
+
+    void lidar_measurement_model(double p_x, double p_y, double yaw)
+    {   
+        double diff_x = 5.0 - p_x;
+        double diff_y = 5.0 - p_y; 
+        double d = std::sqrt((diff_x * diff_x) + (diff_y * diff_y));
+        h_lidar_ << d, std::atan((diff_y) / (diff_x)) - yaw; 
+        z_lidar_ = h_lidar_;
+
+        
+        jacobian_lidar_hxk_ << 0, 0,  (1/d)*(-diff_x),      (1/d)*(-diff_y),
+                               0, -1, -(1/(d*d))*(-diff_y), (1/(d*d))*(-diff_x);  
+
+                        
+
+    }
+
+    void update_step()
+    {
 
     }
 
@@ -135,6 +165,13 @@ class ImuOdomHandler : public rclcpp::Node
         jacobian_fx_.setZero();
         jacobian_fw_.setIdentity();
         covariance_.setZero();
+        Q_ << 0, 0, 0,    0,
+              0, 0, 0,    0,
+              0, 0, 0.01, 0,
+              0, 0, 0,    0.1;
+
+        //assuming the position of a landmark at 5m, 5m
+        h_lidar_ << std::sqrt(25 + 25), 0,785398;
         previous_yaw_ = 0.0;
         previous_velo_ = 0.0;
     }
@@ -146,6 +183,11 @@ class ImuOdomHandler : public rclcpp::Node
     Eigen::MatrixXd jacobian_fx_ = Eigen::MatrixXd(4,4);
     Eigen::MatrixXd jacobian_fw_ = Eigen::MatrixXd(4,4);
     Eigen::MatrixXd covariance_ = Eigen::MatrixXd(4,4);
+    Eigen::Matrix4d Q_ = Eigen::MatrixXd(4,4); //Noise matrix
+
+    Eigen::Vector2d h_lidar_;
+    Eigen::Vector2d z_lidar_;
+    Eigen::MatrixXd jacobian_lidar_hxk_;
     Eigen::VectorXd measurement();
     Eigen::MatrixXd measurement_covariance();
     
