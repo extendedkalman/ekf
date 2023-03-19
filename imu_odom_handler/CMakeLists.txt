@@ -13,6 +13,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(Boost REQUIRED)
 
@@ -42,7 +44,7 @@ add_executable(imu_odom_listener src/imu_odom_listener_node.cpp)
 #  ${EIGEN3_LIBRARIES}
 #)
 
-ament_target_dependencies(imu_odom_listener rclcpp nav_msgs sensor_msgs)
+ament_target_dependencies(imu_odom_listener rclcpp nav_msgs sensor_msgs tf2 tf2_ros)
 
 install(TARGETS
   imu_odom_listener
