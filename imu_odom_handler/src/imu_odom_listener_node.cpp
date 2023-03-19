@@ -142,20 +142,18 @@ class ImuOdomHandler : public rclcpp::Node
     {   
         double diff_x = 5.0 - p_x;
         double diff_y = 5.0 - p_y; 
-        double d = std::sqrt((diff_x * diff_x) + (diff_y * diff_y));
+        double d = get_2d_value(diff_x, diff_y);
         h_lidar_ << d, std::atan((diff_y) / (diff_x)) - yaw; 
         z_lidar_ = h_lidar_;
 
         
         jacobian_lidar_hxk_ << 0, 0,  (1/d)*(-diff_x),      (1/d)*(-diff_y),
                                0, -1, -(1/(d*d))*(-diff_y), (1/(d*d))*(-diff_x);  
-
-                        
-
     }
 
     void update_step()
     {
+        
 
     }
 
