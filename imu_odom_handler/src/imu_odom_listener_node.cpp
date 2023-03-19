@@ -62,7 +62,7 @@ class ImuOdomHandler : public rclcpp::Node
         double acc_y = msg->linear_acceleration.y;
         double acc = get_2d_value(acc_x, acc_y);
         double velo = acc * delta_t_ + previous_velo_;
-        process_model(acc, yaw_rate, velo, yaw_angle);
+        prediction_step(acc, yaw_rate, velo, yaw_angle);
         
         previous_yaw_ = yaw_angle;
         previous_velo_ = velo;
@@ -113,7 +113,7 @@ class ImuOdomHandler : public rclcpp::Node
         return std::sqrt(x*x + y*y);
     }
 
-    const void process_model(double acc, double yaw_rate, double velo, double yaw_angle)
+    const void prediction_step(double acc, double yaw_rate, double velo, double yaw_angle)
     {
         control_input_ << acc, yaw_rate, velo*std::cos(yaw_angle), velo*std::sin(yaw_angle);   
         state_.transpose() += delta_t_ *  control_input_.transpose();
